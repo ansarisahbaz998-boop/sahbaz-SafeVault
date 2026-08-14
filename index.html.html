@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureVault - Personal Data & File Storage</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --danger: #ef4444;
+            --success: #22c55e;
+            --private-color: #f59e0b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .app-layout {
+            display: flex;
+            flex: 1;
+            max-width: 1400px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 20px;
+            gap: 25px;
+        }
+
+        .sidebar {
+            width: 260px;
+            flex-shrink: 0;
+            position: sticky;
+            top: 20px;
+            height: calc(100vh - 40px);
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            overflow-y: auto;
+        }
+
+        .sidebar-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .container {
+            width: 100%;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-card, .view-modal-content {
+            background-color: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            width: 100%;
+            max-width: 400px;
+            border: 1px solid var(--border);
+        }
+
+        .view-modal-content {
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-card h2 {
+            margin-bottom: 20px;
+            text-align: center;
+            color: var(--text-main);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-size: 16px;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            background-color: var(--primary);
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .modal-links {
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        .modal-links a {
+            color: var(--text-muted);
+            font-size: 14px;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .modal-links a:hover {
+            color: var(--primary);
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 25px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .tabs {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .tab-btn {
+            background-color: var(--bg-color);
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: left;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active, .tab-btn:hover {
+            background-color: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .tab-btn.private-tab {
+            margin-top: 10px;
+            border-color: var(--private-color);
+            color: var(--private-color);
+            background-color: rgba(245, 158, 11, 0.05);
+        }
+
+        .tab-btn.private-tab.active, .tab-btn.private-tab:hover {
+            background-color: var(--private-color);
+            color: #000;
+            border-color: var(--private-color);
+        }
+
+        .creator-section {
+            background-color: var(--card-bg);
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            margin-bottom: 30px;
+        }
+
+        .creator-section h3 {
+            margin-bottom: 15px;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        @media(max-width: 900px) {
+            .app-layout {
+                flex-direction: column;
+            }
+            .sidebar {
+                position: relative;
+                width: 100%;
+                height: auto;
+                top: 0;
+            }
+            .tabs {
+                flex-direction: row;
+                flex-wrap: wrap;
+            }
+            .tab-btn {
+                flex: 1;
+                min-width: 120px;
+                text-align: center;
+            }
+            .row { grid-template-columns: 1fr; }
+        }
+
+        .items-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .item-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+        }
+
+        .item-card.is-private {
+            border-color: var(--private-color);
+        }
+
+        .badge-private {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background-color: var(--private-color);
+            color: #000;
+            font-size: 11px;
+            font-weight: bold;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        .item-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            word-break: break-all;
+        }
+
+        .item-body {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 15px;
+            word-break: break-all;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        .item-body img, .item-body video, .item-body audio {
+            max-width: 100%;
+            border-radius: 6px;
+            margin-top: 8px;
+        }
+
+        .item-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--border);
+            padding-top: 10px;
+            font-size: 12px;
+            gap: 8px;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .action-btn {
+            background: none;
+            border: 1px solid var(--border);
+            padding: 4px 8px;
+            border-radius: 4px;
+            color: var(--text-main);
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        .action-btn:hover {
+            background: var(--border);
+        }
+
+        .delete-btn {
+            color: var(--danger);
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        .delete-btn:hover {
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            color: var(--text-main);
+        }
+
+        .checkbox-container input {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--private-color);
+        }
+
+        .storage-bar-container {
+            margin-top: 15px;
+            background-color: var(--bg-color);
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            padding: 8px 12px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        .storage-progress-bg {
+            background-color: var(--border);
+            border-radius: 4px;
+            height: 6px;
+            width: 100%;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+        .storage-progress-fill {
+            background-color: var(--primary);
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- PRIVATE LOCK MODAL -->
+    <div id="privateAuthModal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <div id="privateUnlockView">
+                <h2>🔒 Unlock Private Vault</h2>
+                <div class="form-group">
+                    <label>Private Password</label>
+                    <input type="password" id="privatePasswordInput" class="form-control" placeholder="Enter password">
+                </div>
+                <button class="btn" onclick="verifyPrivateUnlock()">Unlock Private Items</button>
+                <div class="modal-links">
+                    <a onclick="switchModalView('forgot')">Forgot Password?</a> | 
+                    <a onclick="closePrivateModal()">Cancel</a>
+                </div>
+            </div>
+
+            <div id="privateSetupView" class="hidden">
+                <h2>🔒 Setup Private Password</h2>
+                <div class="form-group">
+                    <label>Create Private Password</label>
+                    <input type="password" id="privateSetupInput" class="form-control" placeholder="Choose a secure password">
+                </div>
+                <button class="btn" onclick="savePrivatePassword()">Save Password</button>
+                <div class="modal-links">
+                    <a onclick="closePrivateModal()">Cancel</a>
+                </div>
+            </div>
+
+            <div id="privateForgotView" class="hidden">
+                <h2>Password Recovery</h2>
+                <div id="recoveryStep1">
+                    <div class="form-group">
+                        <label style="font-weight:bold; color:var(--text-main);">Question: i love you</label>
+                        <input type="text" id="recoveryAnswer" class="form-control" placeholder="Type your answer...">
+                    </div>
+                    <button class="btn" onclick="verifyRecoveryStep1()">Next Step</button>
+                </div>
+                <div id="recoveryStep2" class="hidden">
+                    <div class="form-group">
+                        <label>Enter New Private Password</label>
+                        <input type="password" id="newResetPassword" class="form-control" placeholder="New password">
+                    </div>
+                    <button class="btn" onclick="executePasswordReset()">Update Password</button>
+                </div>
+                <div class="modal-links" style="margin-top:20px;">
+                    <a onclick="switchModalView('unlock')">Cancel & Return</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GENERAL ITEM VIEW/EDIT MODAL -->
+    <div id="itemModalOverlay" class="modal-overlay hidden">
+        <div id="itemModalCard" class="view-modal-content"></div>
+    </div>
+
+    <!-- MAIN APP LAYOUT -->
+    <div class="app-layout">
+        <div class="sidebar">
+            <div class="logo" style="margin-bottom: 5px;">🛡️ SecureVault</div>
+            <div class="sidebar-title">Categories</div>
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('all')">All Items</button>
+                <button class="tab-btn" onclick="switchTab('Notes')">Notes</button>
+                <button class="tab-btn" onclick="switchTab('documents')">Documents</button>
+                <button class="tab-btn" onclick="switchTab('website link')">Website Link</button>
+                <button class="tab-btn" onclick="switchTab('image')">Image</button>
+                <button class="tab-btn" onclick="switchTab('image link')">Image Link</button>
+                <button class="tab-btn" onclick="switchTab('video')">Video</button>
+                <button class="tab-btn" onclick="switchTab('video link')">Video Link</button>
+                <button class="tab-btn" onclick="switchTab('voice recording')">Voice Recording</button>
+                <button class="tab-btn" onclick="switchTab('music')">Music</button>
+                <button class="tab-btn private-tab" onclick="handlePrivateTabClick()">🔒 Private Items</button>
+            </div>
+
+            <!-- Storage Indicator -->
+            <div class="storage-bar-container">
+                <div style="display: flex; justify-content: space-between;">
+                    <span>Vault Storage</span>
+                    <span id="storageUsedText">0 MB / 500 GB</span>
+                </div>
+                <div class="storage-progress-bg">
+                    <div id="storageProgressFill" class="storage-progress-fill"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div id="dashboardContainer" class="container">
+                <header>
+                    <div style="font-size: 18px; font-weight: 600;">Data & File Storage Manager</div>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <div style="font-size: 14px; color: var(--text-muted);" id="currentSectionTitle">Viewing: All Items</div>
+                        <button id="deleteAllBtn" class="action-btn delete-btn hidden" onclick="deleteAllVaultItems()" style="padding: 6px 12px; font-weight: 600;">🗑️ Delete All</button>
+                    </div>
+                </header>
+
+                <div class="creator-section">
+                    <h3 id="formSectionTitle">Add New Item</h3>
+                    <input type="hidden" id="editItemId" value="">
+                    <div class="row" style="margin-bottom: 15px;">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>Category Type</label>
+                            <select id="itemCategory" class="form-control" onchange="updateInputFields()">
+                                <option value="Notes">Notes</option>
+                                <option value="documents">Documents</option>
+                                <option value="website link">Website Link</option>
+                                <option value="image">Image (Upload file)</option>
+                                <option value="image link">Image Link</option>
+                                <option value="video">Video (Upload file)</option>
+                                <option value="video link">Video Link</option>
+                                <option value="voice recording">Voice Recording (Upload / Record)</option>
+                                <option value="music">Music (Upload file)</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>Title / Identifier <span style="color:var(--danger)">*</span></label>
+                            <input type="text" id="itemTitle" class="form-control" placeholder="Name or description title...">
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="dynamicInputContainer">
+                        <label>Content / Text / Value / URL <span style="color:var(--danger)">*</span></label>
+                        <textarea id="itemContentText" class="form-control" rows="3" placeholder="Enter content or text link..."></textarea>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
+                        <label class="checkbox-container">
+                            <input type="checkbox" id="itemIsPrivate">
+                            Mark as Private Item (Requires Password to View)
+                        </label>
+                        <div style="display:flex; gap:10px;">
+                            <button id="cancelEditBtn" class="btn hidden" style="width: auto; padding: 10px 15px; background-color: var(--border);" onclick="resetForm()">Cancel</button>
+                            <button id="saveItemBtn" class="btn" style="width: auto; padding: 10px 25px;" onclick="saveNewItem()">Save to Storage</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="itemsGrid" class="items-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentTab = 'all';
+        let isPrivateUnlocked = false;
+        let searchQuery = '';
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let recordedAudioBlob = null;
+        let db = null;
+
+        const MAX_STORAGE_BYTES = 500 * 1024 * 1024 * 1024; // 500 GB Limit
+
+        // Initialize IndexedDB
+        function openDatabase() {
+            return new Promise((resolve, reject) => {
+                if (db) return resolve(db);
+                const request = indexedDB.open('SecureVaultLargeDB', 1);
+                
+                request.onupgradeneeded = function(event) {
+                    const database = event.target.result;
+                    if (!database.objectStoreNames.contains('items')) {
+                        database.createObjectStore('items', { keyPath: 'id' });
+                    }
+                };
+
+                request.onsuccess = function(event) {
+                    db = event.target.result;
+                    resolve(db);
+                };
+
+                request.onerror = function(event) {
+                    console.error('IndexedDB error:', event.target.error);
+                    reject(event.target.error);
+                };
+            });
+        }
+
+        async function getVaultData() {
+            const database = await openDatabase();
+            return new Promise((resolve, reject) => {
+                const transaction = database.transaction(['items'], 'readonly');
+                const store = transaction.objectStore('items');
+                const request = store.getAll();
+
+                request.onsuccess = function() {
+                    resolve(request.result || []);
+                };
+                request.onerror = function() {
+                    reject([]);
+                };
+            });
+        }
+
+        async function saveVaultItem(item) {
+            const database = await openDatabase();
+            return new Promise((resolve, reject) => {
+                const transaction = database.transaction(['items'], 'readwrite');
+                const store = transaction.objectStore('items');
+                store.put(item);
+
+                transaction.oncomplete = async function() {
+                    await updateStorageMeter();
+                    resolve();
+                };
+                transaction.onerror = function(event) {
+                    alert('Storage error: Unable to save item to database.');
+                    reject(event.target.error);
+                };
+            });
+        }
+
+        async function deleteVaultItem(id) {
+            const database = await openDatabase();
+            return new Promise((resolve, reject) => {
+                const transaction = database.transaction(['items'], 'readwrite');
+                const store = transaction.objectStore('items');
+                store.delete(id);
+
+                transaction.oncomplete = async function() {
+                    await updateStorageMeter();
+                    resolve();
+                };
+                transaction.onerror = function(event) {
+                    alert('Storage error: Unable to delete item from database.');
+                    reject(event.target.error);
+                };
+            });
+        }
+
+        async function updateStorageMeter() {
+            const items = await getVaultData();
+            let estimatedBytes = 0;
+            items.forEach(item => {
+                if (item.content) {
+                    estimatedBytes += item.content.size || item.content.length * 2;
+                }
+            });
+
+            const usedMB = (estimatedBytes / (1024 * 1024)).toFixed(2);
+            document.getElementById('storageUsedText').innerText = `${usedMB} MB / 500 GB`;
+            
+            const percentage = Math.min((estimatedBytes / MAX_STORAGE_BYTES) * 100, 100);
+            document.getElementById('storageProgressFill').style.width = `${Math.max(percentage, 0.5)}%`;
+        }
+
+        function getPrivatePassword() {
+            return localStorage.getItem('secure_vault_private_pass');
+        }
+
+        window.onload = async function() {
+            await openDatabase();
+            updateInputFields();
+            await renderDashboard();
+            await updateStorageMeter();
+        };
+
+        async function switchTab(tabName) {
+            if (currentTab === 'private' && tabName !== 'private') {
+                isPrivateUnlocked = false;
+            }
+            currentTab = tabName;
+            await updateActiveTabUI(tabName);
+            resetForm();
+            
+            const categorySelect = document.getElementById('itemCategory');
+            const matchingOption = Array.from(categorySelect.options).some(opt => opt.value === tabName);
+            if (matchingOption) {
+                categorySelect.value = tabName;
+                updateInputFields();
+            }
+
+            await renderDashboard();
+        }
+
+        async function updateActiveTabUI(tabName) {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.getAttribute('onclick')?.includes(`'${tabName}'`));
+            });
+            document.getElementById('currentSectionTitle').innerText = `Viewing: ${tabName === 'all' ? 'All Items' : tabName.toUpperCase()}`;
+            
+            const deleteAllBtn = document.getElementById('deleteAllBtn');
+            const items = await getVaultData();
+            let visibleCount = 0;
+            if (tabName === 'private') {
+                visibleCount = isPrivateUnlocked ? items.filter(i => i.isPrivate).length : 0;
+            } else if (tabName === 'all') {
+                visibleCount = items.filter(i => !i.isPrivate).length;
+            } else {
+                visibleCount = items.filter(i => i.category === tabName && !i.isPrivate).length;
+            }
+
+            if (visibleCount > 0) {
+                deleteAllBtn.classList.remove('hidden');
+            } else {
+                deleteAllBtn.classList.add('hidden');
+            }
+        }
+
+        function handlePrivateTabClick() {
+            if (isPrivateUnlocked) {
+                switchTab('private');
+            } else {
+                const pass = getPrivatePassword();
+                document.getElementById('privateAuthModal').classList.remove('hidden');
+                switchModalView(!pass ? 'setup' : 'unlock');
+            }
+        }
+
+        function closePrivateModal() {
+            document.getElementById('privateAuthModal').classList.add('hidden');
+            document.getElementById('privatePasswordInput').value = '';
+            document.getElementById('privateSetupInput').value = '';
+        }
+
+        function switchModalView(view) {
+            document.getElementById('privateUnlockView').classList.toggle('hidden', view !== 'unlock');
+            document.getElementById('privateSetupView').classList.toggle('hidden', view !== 'setup');
+            document.getElementById('privateForgotView').classList.toggle('hidden', view !== 'forgot');
+            if (view === 'forgot') {
+                document.getElementById('recoveryStep1').classList.remove('hidden');
+                document.getElementById('recoveryStep2').classList.add('hidden');
+                document.getElementById('recoveryAnswer').value = '';
+            }
+        }
+
+        function savePrivatePassword() {
+            const pass = document.getElementById('privateSetupInput').value;
+            if (!pass) return alert('Please enter a valid password.');
+            localStorage.setItem('secure_vault_private_pass', pass);
+            isPrivateUnlocked = true;
+            closePrivateModal();
+            switchTab('private');
+        }
+
+        function verifyPrivateUnlock() {
+            if (document.getElementById('privatePasswordInput').value === getPrivatePassword()) {
+                isPrivateUnlocked = true;
+                closePrivateModal();
+                switchTab('private');
+            } else {
+                alert('Incorrect private password.');
+            }
+        }
+
+        function verifyRecoveryStep1() {
+            if (document.getElementById('recoveryAnswer').value.trim().toLowerCase() === 'sorry') {
+                document.getElementById('recoveryStep1').classList.add('hidden');
+                document.getElementById('recoveryStep2').classList.remove('hidden');
+            } else {
+                alert('Incorrect answer.');
+            }
+        }
+
+        function executePasswordReset() {
+            const newPass = document.getElementById('newResetPassword').value;
+            if (!newPass) return alert('Please enter a new password.');
+            localStorage.setItem('secure_vault_private_pass', newPass);
+            isPrivateUnlocked = true;
+            closePrivateModal();
+            switchTab('private');
+        }
+
+        function updateInputFields() {
+            const category = document.getElementById('itemCategory').value;
+            const container = document.getElementById('dynamicInputContainer');
+            
+            if (['image', 'video', 'music', 'documents'].includes(category)) {
+                container.innerHTML = `
+                    <label>Upload File (${category.toUpperCase()}) <span style="color:var(--danger)">*</span></label>
+                    <input type="file" id="itemFileContent" class="form-control">
+                `;
+            } else if (category === 'voice recording') {
+                container.innerHTML = `
+                    <label>Voice Recording <span style="color:var(--danger)">*</span></label>
+                    <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px;">
+                        <button type="button" id="startRecordBtn" class="btn" style="background-color:var(--success);" onclick="startVoiceRecording()">🔴 Record</button>
+                        <button type="button" id="stopRecordBtn" class="btn hidden" style="background-color:var(--danger);" onclick="stopVoiceRecording()">⏹️ Stop</button>
+                        <span id="recordingStatus" style="font-size:14px; color:var(--text-muted);">Idle</span>
+                    </div>
+                    <audio id="recordedAudioPreview" controls class="hidden" style="width:100%; margin-top:5px;"></audio>
+                    <div style="margin-top:10px;">
+                        <label style="font-size:12px;">Or Upload Audio File:</label>
+                        <input type="file" id="itemFileContent" class="form-control" accept="audio/*">
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `
+                    <label>Content / Text / URL <span style="color:var(--danger)">*</span></label>
+                    <textarea id="itemContentText" class="form-control" rows="3" placeholder="Enter link or notes text..."></textarea>
+                `;
+            }
+        }
+
+        async function startVoiceRecording() {
+            audioChunks = [];
+            recordedAudioBlob = null;
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+                mediaRecorder.onstop = () => {
+                    recordedAudioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    const preview = document.getElementById('recordedAudioPreview');
+                    preview.src = URL.createObjectURL(recordedAudioBlob);
+                    preview.classList.remove('hidden');
+                    document.getElementById('recordingStatus').innerText = 'Ready to save!';
+                };
+                mediaRecorder.start();
+                document.getElementById('startRecordBtn').classList.add('hidden');
+                document.getElementById('stopRecordBtn').classList.remove('hidden');
+                document.getElementById('recordingStatus').innerText = 'Recording...';
+            } catch (err) {
+                alert('Microphone access denied or unavailable.');
+            }
+        }
+
+        function stopVoiceRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                document.getElementById('startRecordBtn').classList.remove('hidden');
+                document.getElementById('stopRecordBtn').classList.add('hidden');
+            }
+        }
+
+        async function saveNewItem() {
+            const editId = document.getElementById('editItemId').value;
+            const category = document.getElementById('itemCategory').value;
+            const titleInput = document.getElementById('itemTitle');
+            const title = titleInput.value.trim();
+
+            if (!title) {
+                alert('Please enter a Title / Identifier before saving.');
+                titleInput.focus();
+                return;
+            }
+
+            const isPrivate = document.getElementById('itemIsPrivate').checked;
+
+            const processSave = async (content, type, fileName = '') => {
+                const itemId = editId ? Number(editId) : Date.now();
+                const itemData = { id: itemId, category, title, isPrivate, content, type, fileName };
+                await saveVaultItem(itemData);
+                resetForm();
+                await renderDashboard();
+            };
+
+            if (category === 'voice recording' && recordedAudioBlob) {
+                await processSave(recordedAudioBlob, 'file', `voice_${Date.now()}.webm`);
+                return;
+            }
+
+            const fileInput = document.getElementById('itemFileContent');
+            if (fileInput && fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                await processSave(file, 'file', file.name);
+                return;
+            }
+
+            const textContent = document.getElementById('itemContentText')?.value.trim();
+            
+            if (!textContent && ['image', 'video', 'music', 'documents'].includes(category)) {
+                alert('Please select and upload a valid file for this category.');
+                return;
+            }
+            if (category === 'voice recording' && !textContent && !recordedAudioBlob) {
+                alert('Please either record a voice note or upload an audio file.');
+                return;
+            }
+            if (!textContent && !['image', 'video', 'music', 'documents', 'voice recording'].includes(category)) {
+                alert('Content text or URL cannot be empty.');
+                return;
+            }
+
+            await processSave(textContent || '', 'text');
+        }
+
+        function resetForm() {
+            document.getElementById('editItemId').value = '';
+            document.getElementById('itemTitle').value = '';
+            document.getElementById('itemIsPrivate').checked = false;
+            document.getElementById('formSectionTitle').innerText = 'Add New Item';
+            document.getElementById('saveItemBtn').innerText = 'Save to Storage';
+            document.getElementById('cancelEditBtn').classList.add('hidden');
+            recordedAudioBlob = null;
+            updateInputFields();
+        }
+
+        async function editItem(id) {
+            const items = await getVaultData();
+            const item = items.find(i => i.id === id);
+            if (!item) return;
+
+            document.getElementById('editItemId').value = item.id;
+            document.getElementById('itemCategory').value = item.category;
+            document.getElementById('itemTitle').value = item.title;
+            document.getElementById('itemIsPrivate').checked = item.isPrivate;
+            document.getElementById('formSectionTitle').innerText = 'Edit Item';
+            document.getElementById('saveItemBtn').innerText = 'Update Item';
+            document.getElementById('cancelEditBtn').classList.remove('hidden');
+
+            updateInputFields();
+            if (item.type === 'text') {
+                const textElem = document.getElementById('itemContentText');
+                if (textElem) textElem.value = item.content;
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        async function viewItem(id) {
+            const items = await getVaultData();
+            const item = items.find(i => i.id === id);
+            if (!item) return;
+
+            const modalOverlay = document.getElementById('itemModalOverlay');
+            let innerHtml = `<h2>${escapeHtml(item.title)}</h2>`;
+            innerHtml += `<p style="font-size:12px; color:var(--text-muted); text-transform:uppercase; margin-bottom:15px;">Category: ${item.category}</p>`;
+
+            if (item.type === 'file') {
+                const fileUrl = URL.createObjectURL(item.content);
+                if (item.category === 'image') innerHtml += `<img src="${fileUrl}" style="width:100%; border-radius:6px; margin-bottom:15px;">`;
+                else if (item.category === 'video') innerHtml += `<video controls src="${fileUrl}" style="width:100%; border-radius:6px; margin-bottom:15px;"></video>`;
+                else if (['voice recording', 'music'].includes(item.category)) innerHtml += `<audio controls src="${fileUrl}" style="width:100%; margin-bottom:15px;"></audio>`;
+                else innerHtml += `<p style="margin-bottom:15px;">File Name: ${escapeHtml(item.fileName || 'file')}</p>`;
+                innerHtml += `<button class="btn" onclick="downloadItem(${item.id})">Download File</button>`;
+            } else {
+                innerHtml += `<div style="background:var(--bg-color); padding:15px; border-radius:6px; word-break:break-all; margin-bottom:15px; max-height:40vh; overflow-y:auto;">${escapeHtml(item.content)}</div>`;
+            }
+
+            innerHtml += `<div style="text-align:right; margin-top:20px;"><button class="action-btn" style="padding:8px 16px;" onclick="closeItemModal()">Close</button></div>`;
+            document.getElementById('itemModalCard').innerHTML = innerHtml;
+            modalOverlay.classList.remove('hidden');
+        }
+
+        function closeItemModal() {
+            document.getElementById('itemModalOverlay').classList.add('hidden');
+        }
+
+        async function downloadItem(id) {
+            const items = await getVaultData();
+            const item = items.find(i => i.id === id);
+            if (!item || item.type !== 'file') return;
+
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(item.content);
+            a.download = item.fileName || `vault_download_${item.id}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        async function handleSearchInput(e) {
+            searchQuery = e.target.value.toLowerCase().trim();
+            await renderDashboard();
+        }
+
+        async function renderDashboard() {
+            const grid = document.getElementById('itemsGrid');
+            const items = await getVaultData();
+            grid.innerHTML = '';
+
+            let filteredItems = [];
+            if (currentTab === 'private') {
+                if (!isPrivateUnlocked) {
+                    grid.innerHTML = `<p style="color:var(--text-muted); grid-column: 1/-1; text-align: center; padding: 40px;">Private Vault is locked. Click the Private tab to unlock.</p>`;
+                    await updateActiveTabUI(currentTab);
+                    return;
+                }
+                filteredItems = items.filter(i => i.isPrivate);
+            } else {
+                filteredItems = items.filter(i => (currentTab === 'all' || i.category === currentTab) && !i.isPrivate);
+            }
+
+            if (currentTab === 'all') {
+                let searchBar = document.getElementById('searchBarContainer');
+                if (!searchBar) {
+                    searchBar = document.createElement('div');
+                    searchBar.id = 'searchBarContainer';
+                    searchBar.style.marginBottom = '20px';
+                    searchBar.innerHTML = `<input type="text" id="globalSearchInput" class="form-control" placeholder="Search across all items..." oninput="handleSearchInput(event)" value="${searchQuery}">`;
+                    document.querySelector('header').after(searchBar);
+                }
+                if (searchQuery) {
+                    filteredItems = filteredItems.filter(i => i.title.toLowerCase().includes(searchQuery) || (i.type === 'text' && i.content.toLowerCase().includes(searchQuery)));
+                }
+            } else {
+                document.getElementById('searchBarContainer')?.remove();
+                searchQuery = '';
+            }
+
+            await updateActiveTabUI(currentTab);
+
+            if (filteredItems.length === 0) {
+                grid.innerHTML = `<p style="color:var(--text-muted); grid-column: 1/-1; text-align: center; padding: 40px;">No items found in this section.</p>`;
+                return;
+            }
+
+            const fragment = document.createDocumentFragment();
+            filteredItems.forEach(item => {
+                const card = document.createElement('div');
+                card.className = `item-card ${item.isPrivate ? 'is-private' : ''}`;
+
+                let bodyHtml = '';
+                if (item.type === 'file') {
+                    const fileUrl = URL.createObjectURL(item.content);
+                    if (item.category === 'image') bodyHtml = `<img src="${fileUrl}" alt="${escapeHtml(item.title)}" loading="lazy">`;
+                    else if (item.category === 'video') bodyHtml = `<video controls preload="metadata" src="${fileUrl}"></video>`;
+                    else if (['voice recording', 'music'].includes(item.category)) bodyHtml = `<audio controls preload="none" src="${fileUrl}"></audio>`;
+                    else bodyHtml = `<span style="color:var(--primary); font-weight:600;">📄 File: ${escapeHtml(item.fileName || 'Attached file')}</span>`;
+                } else {
+                    if (['website link', 'image link', 'video link'].includes(item.category)) {
+                        bodyHtml = `<a href="${item.content}" target="_blank" rel="noopener noreferrer" style="color:var(--primary); word-break:break-all;">${escapeHtml(item.content)}</a>`;
+                    } else {
+                        bodyHtml = `<div>${escapeHtml(item.content)}</div>`;
+                    }
+                }
+
+                card.innerHTML = `
+                    ${item.isPrivate ? '<span class="badge-private">PRIVATE</span>' : ''}
+                    <div>
+                        <div class="item-title">${escapeHtml(item.title)}</div>
+                        <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; margin-bottom:8px;">${escapeHtml(item.category)}</div>
+                        <div class="item-body">${bodyHtml}</div>
+                    </div>
+                    <div class="item-footer">
+                        <span style="font-size:11px; color:var(--text-muted);">${new Date(item.id).toLocaleDateString()}</span>
+                        <div class="card-actions">
+                            <button class="action-btn" onclick="viewItem(${item.id})">View</button>
+                            <button class="action-btn" onclick="editItem(${item.id})">Edit</button>
+                            ${item.type === 'file' ? `<button class="action-btn" onclick="downloadItem(${item.id})">Download</button>` : ''}
+                            <button class="action-btn delete-btn" onclick="deleteItem(${item.id})">Delete</button>
+                        </div>
+                    </div>
+                `;
+                fragment.appendChild(card);
+            });
+            grid.appendChild(fragment);
+        }
+
+        async function deleteItem(id) {
+            if (confirm('Are you sure you want to delete this item?')) {
+                await deleteVaultItem(id);
+                await renderDashboard();
+            }
+        }
+
+        async function deleteAllVaultItems() {
+            const sectionText = currentTab === 'all' ? 'all public items' : (currentTab === 'private' ? 'all private items' : `all items in category "${currentTab}"`);
+            if (confirm(`⚠️ Warning: Are you sure you want to delete ${sectionText}? This action cannot be undone.`)) {
+                const items = await getVaultData();
+                let itemsToDelete = [];
+
+                if (currentTab === 'all') {
+                    itemsToDelete = items.filter(i => !i.isPrivate);
+                } else if (currentTab === 'private') {
+                    itemsToDelete = items.filter(i => i.isPrivate);
+                } else {
+                    itemsToDelete = items.filter(i => i.category === currentTab && !i.isPrivate);
+                }
+
+                for (const item of itemsToDelete) {
+                    await deleteVaultItem(item.id);
+                }
+                await renderDashboard();
+            }
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text.toString()
+                .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
